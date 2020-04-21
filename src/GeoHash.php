@@ -27,6 +27,40 @@ class GeoHash
     }
 
     /**
+     * Geo Hash to Latitude and longitude
+     * @param string $geoHash
+     * @return array
+     */
+    public function decode(string $geoHash): array
+    {
+        $binary = '';
+        for ($i = 0; $i < strlen($geoHash); $i++) {
+            $binary .= str_pad(decbin(array_search($geoHash[$i], $this->digits)), 5, '0', STR_PAD_LEFT);
+        }
+        $lonSet = [];
+        $latSet = [];
+        for ($i = 0; $i < strlen($binary); $i++) {
+            if ($i % 2) {
+                array_push($lonSet, $binary[$i]);
+            } else {
+                array_push($latSet, $binary[$i]);
+            }
+        }
+        $lon = $this->bitsDecode($lonSet, self::MIN_LNG, self::MAX_LNG);
+        $lat = $this->bitsDecode($latSet, self::MIN_LAT, self::MAX_LAT);
+        $latErr = $this->calcError(count($latSet), self::MIN_LAT, self::MAX_LAT);
+        $lonErr = $this->calcError(count($lonSet), self::MIN_LNG, self::MAX_LNG);
+
+        $latPlaces = max(1, -round(log10($latErr))) - 1;
+        $lonPlaces = max(1, -round(log10($lonErr))) - 1;
+
+        $lat = round($lat, $latPlaces);
+        $lon = round($lon, $lonPlaces);
+
+        return [$lat, $lon];
+    }
+
+    /**
      * Encode a hash from given lat and long
      *
      * @param float $lat
@@ -92,7 +126,7 @@ class GeoHash
      * @param float $ceiling
      * @return float
      */
-    private function _decode(array $bs, float $floor, float $ceiling): float
+    private function bitsDecode(array $bs, float $floor, float $ceiling): float
     {
         $mid = 0;
         for ($i = 0; $i < count($bs); $i++) {
@@ -105,28 +139,11 @@ class GeoHash
         return $mid;
     }
 
-    /**
-     * Geo Hash to Latitude and longitude
-     * @param string $geoHash
-     * @return array
-     */
-    public function decode(string $geoHash): array
+    private function calcError(int $bits, float $floor, float $ceiling): float
     {
-        $binary = [];
-        for ($i = 0; $i < strlen($geoHash); $i++) {
-            $binary .= str_pad(decbin(array_search($geoHash[$i], $this->digits)), 5, '0', STR_PAD_LEFT);
-        }
-        $lonSet = [];
-        $latSet = [];
-        for ($i = 0; $i < strlen($binary); $i++) {
-            if ($i % 2) {
-                array_push($lonSet, $binary[$i]);
-            } else {
-                array_push($latSet, $binary[$i]);
-            }
-        }
-        $lon = $this->_decode($lonSet, self::MIN_LNG, self::MAX_LNG);
-        $lat = $this->_decode($latSet, self::MIN_LAT, self::MAX_LAT);
-        return [$lat, $lon];
+        $err = ($ceiling - $floor) / 2;
+        while ($bits--)
+            $err /= 2;
+        return $err;
     }
 }
