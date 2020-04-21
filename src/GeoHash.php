@@ -11,16 +11,16 @@ class GeoHash
     public const MIN_LNG = -180;
     public const MAX_LNG = 180;
 
-    private $numBits = 15;
+    private $numBits;
 
     private $digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
     /**
      * Longitude and latitude separately encoded length
-     * @param int $numBits
+     * @param null|int $numBits
      * @return $this
      */
-    function setBits(int $numBits = 15)
+    function setBits(?int $numBits)
     {
         $this->numBits = $numBits;
         return $this;
@@ -69,6 +69,9 @@ class GeoHash
      */
     public function encode(float $lat, float $lon)
     {
+        if (!$this->numBits) {
+            $this->setBits(max($this->precision(strval($lat)), $this->precision(strval($lon))));
+        }
         $latBits = $this->getBits($lat, self::MIN_LAT, self::MAX_LAT);
         $lonBits = $this->getBits($lon, self::MIN_LNG, self::MAX_LNG);
         $binary = '';
@@ -137,6 +140,21 @@ class GeoHash
                 $ceiling = $mid;
         }
         return $mid;
+    }
+
+    /**
+     * get precision
+     * @param string $number
+     * @return float
+     */
+    private function precision(string $number): float
+    {
+        $precision = 0;
+        $pt = strpos($number, '.');
+        if ($pt !== false) {
+            $precision = -(strlen($number) - $pt - 1);
+        }
+        return pow(10, $precision) / 2;
     }
 
     private function calcError(int $bits, float $floor, float $ceiling): float

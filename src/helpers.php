@@ -15,10 +15,10 @@ if (!function_exists('geo_hash_encode')) {
      *
      * @param float $lat
      * @param float $lon
-     * @param int $numBits
+     * @param null|int $numBits
      * @return string
      */
-    function geo_hash_encode(float $lat, float $lon, int $numBits = 15): string
+    function geo_hash_encode(float $lat, float $lon, ?int $numBits = null): string
     {
         return geo_hash()->setBits($numBits)->encode($lat, $lon);
     }
