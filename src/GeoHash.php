@@ -41,9 +41,9 @@ class GeoHash
         $latSet = [];
         for ($i = 0; $i < strlen($binary); $i++) {
             if ($i % 2) {
-                array_push($lonSet, $binary[$i]);
-            } else {
                 array_push($latSet, $binary[$i]);
+            } else {
+                array_push($lonSet, $binary[$i]);
             }
         }
         $lon = $this->bitsDecode($lonSet, self::MIN_LNG, self::MAX_LNG);
