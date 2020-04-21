@@ -11,6 +11,9 @@ class GeoHash
     public const MIN_LNG = -180;
     public const MAX_LNG = 180;
 
+    public const ERR_LNG = 90;
+    public const ERR_LAT = 45;
+
     private $numBits;
 
     private $digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
@@ -70,7 +73,7 @@ class GeoHash
     public function encode(float $lat, float $lon)
     {
         if (!$this->numBits) {
-            $this->setBits(max($this->precision(strval($lat)), $this->precision(strval($lon))));
+            $this->setBits(max($this->preBits($lat, self::ERR_LAT), $this->preBits($lon, self::ERR_LNG)));
         }
         $latBits = $this->getBits($lat, self::MIN_LAT, self::MAX_LAT);
         $lonBits = $this->getBits($lon, self::MIN_LNG, self::MAX_LNG);
@@ -84,17 +87,17 @@ class GeoHash
     /**
      * According to latitude and longitude and range, obtain the corresponding binary
      *
-     * @param float $lat
+     * @param float $number
      * @param float $floor
      * @param float $ceiling
      * @return array
      */
-    private function getBits(float $lat, float $floor, float $ceiling)
+    private function getBits(float $number, float $floor, float $ceiling)
     {
         $buffer = [];
         for ($i = 0; $i < $this->numBits; $i++) {
             $mid = ($floor + $ceiling) / 2;
-            if ($lat >= $mid) {
+            if ($number >= $mid) {
                 array_push($buffer, 1);
                 $floor = $mid;
             } else {
@@ -155,6 +158,17 @@ class GeoHash
             $precision = -(strlen($number) - $pt - 1);
         }
         return pow(10, $precision) / 2;
+    }
+
+    private function preBits(float $number, int $err)
+    {
+        $pre = $this->precision(strval($number));
+        $bits = 1;
+        while ($err > $pre) {
+            $bits++;
+            $err /= 2;
+        }
+        return $bits;
     }
 
     private function calcError(int $bits, float $floor, float $ceiling): float
