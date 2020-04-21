@@ -20,7 +20,7 @@ class GeoHash
      * @param int $numBits
      * @return $this
      */
-    function setNumBits(int $numBits = 15)
+    function setBits(int $numBits = 15)
     {
         $this->numBits = $numBits;
         return $this;

@@ -20,7 +20,7 @@ if (!function_exists('geo_hash_encode')) {
      */
     function geo_hash_encode(float $lat, float $lon, int $numBits = 15): string
     {
-        return geo_hash()->setNumBits($numBits)->encode($lat, $lon);
+        return geo_hash()->setBits($numBits)->encode($lat, $lon);
     }
 }
 
