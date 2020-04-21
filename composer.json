@@ -1,0 +1,22 @@
+{
+    "name": "mucts/geohash",
+    "description": "GeoHash LBS地理位置距离计算方法geohash，将一个经纬度信息，转换成一个可以排序，可以比较的字符串编码，用于高效搜索",
+    "type": "library",
+    "require": {
+        "php": "^7.2"
+    },
+    "authors": [
+        {
+            "name": "herry",
+            "email": "yuandeng@aliyun.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "MuCTS\\GeoHash\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    }
+}
