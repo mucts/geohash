@@ -8,24 +8,29 @@ class GeoHash
 {
     public const MIN_LAT = -90;
     public const MAX_LAT = 90;
-    public const MIN_LNG = -180;
-    public const MAX_LNG = 180;
+    public const MIN_LON = -180;
+    public const MAX_LON = 180;
 
     public const ERR_LNG = 90;
     public const ERR_LAT = 45;
 
-    private $numBits;
+    /** @var int $bits */
+    private $bits;
+    /** @var int $lonBits */
+    private $lonBits;
+    /** @var int $latBits */
+    private $latBits;
 
     private $digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
     /**
      * Longitude and latitude separately encoded length
-     * @param null|int $numBits
+     * @param null|int $bits
      * @return $this
      */
-    function setBits(?int $numBits)
+    function setBits(?int $bits)
     {
-        $this->numBits = $numBits;
+        $this->bits = $this->lonBits = $this->latBits = $bits;
         return $this;
     }
 
@@ -49,10 +54,10 @@ class GeoHash
                 array_push($lonSet, $binary[$i]);
             }
         }
-        $lon = $this->bitsDecode($lonSet, self::MIN_LNG, self::MAX_LNG);
+        $lon = $this->bitsDecode($lonSet, self::MIN_LON, self::MAX_LON);
         $lat = $this->bitsDecode($latSet, self::MIN_LAT, self::MAX_LAT);
         $latErr = $this->calcError(count($latSet), self::MIN_LAT, self::MAX_LAT);
-        $lonErr = $this->calcError(count($lonSet), self::MIN_LNG, self::MAX_LNG);
+        $lonErr = $this->calcError(count($lonSet), self::MIN_LON, self::MAX_LON);
 
         $latPlaces = max(1, -round(log10($latErr))) - 1;
         $lonPlaces = max(1, -round(log10($lonErr))) - 1;
@@ -72,14 +77,13 @@ class GeoHash
      */
     public function encode(float $lat, float $lon)
     {
-        if (!$this->numBits) {
-            $this->setBits(max($this->preBits($lat, self::ERR_LAT), $this->preBits($lon, self::ERR_LNG)));
-        }
-        $latBits = $this->getBits($lat, self::MIN_LAT, self::MAX_LAT);
-        $lonBits = $this->getBits($lon, self::MIN_LNG, self::MAX_LNG);
+        $this->adjustBits($lat, $lon);
+        $latBits = $this->getBits($lat, self::MIN_LAT, self::MAX_LAT, $this->latBits);
+        $lonBits = $this->getBits($lon, self::MIN_LON, self::MAX_LON, $this->lonBits);
         $binary = '';
-        for ($i = 0; $i < $this->numBits; $i++) {
-            $binary .= $lonBits[$i] . $latBits[$i];
+        while ($latBits || $lonBits) {
+            $binary .= array_shift($lonBits) ?? '';
+            $binary .= array_shift($latBits) ?? '';
         }
         return $this->base32($binary);
     }
@@ -90,12 +94,13 @@ class GeoHash
      * @param float $number
      * @param float $floor
      * @param float $ceiling
+     * @param int $bits
      * @return array
      */
-    private function getBits(float $number, float $floor, float $ceiling)
+    private function getBits(float $number, float $floor, float $ceiling, int $bits): array
     {
         $buffer = [];
-        for ($i = 0; $i < $this->numBits; $i++) {
+        for ($i = 0; $i < $bits; $i++) {
             $mid = ($floor + $ceiling) / 2;
             if ($number >= $mid) {
                 array_push($buffer, 1);
@@ -169,6 +174,19 @@ class GeoHash
             $err /= 2;
         }
         return $bits;
+    }
+
+    private function adjustBits(float $lat, float $lon): void
+    {
+        if (!$this->bits) {
+            $this->setBits(max($this->preBits($lat, self::ERR_LAT), $this->preBits($lon, self::ERR_LNG)));
+        }
+        $bit = 1;
+        while (($this->lonBits + $this->latBits) % 5 != 0) {
+            $this->lonBits += $bit;
+            $this->latBits += !$bit;
+            $bit = !$bit;
+        }
     }
 
     private function calcError(int $bits, float $floor, float $ceiling): float
