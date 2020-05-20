@@ -28,7 +28,7 @@ class GeoHash
      * @param null|int $bits
      * @return $this
      */
-    function setBits(?int $bits)
+    public function setBits(?int $bits)
     {
         $this->bits = $this->lonBits = $this->latBits = $bits;
         return $this;
@@ -81,7 +81,7 @@ class GeoHash
         $latBits = $this->getBits($lat, self::MIN_LAT, self::MAX_LAT, $this->latBits);
         $lonBits = $this->getBits($lon, self::MIN_LON, self::MAX_LON, $this->lonBits);
         $binary = '';
-        while ($latBits || $lonBits) {
+        while (!empty($latBits) || !empty($lonBits)) {
             $binary .= array_shift($lonBits) ?? '';
             $binary .= array_shift($latBits) ?? '';
         }
@@ -140,7 +140,8 @@ class GeoHash
     private function bitsDecode(array $bs, float $floor, float $ceiling): float
     {
         $mid = 0;
-        for ($i = 0; $i < count($bs); $i++) {
+        $len = count($bs);
+        for ($i = 0; $i < $len; $i++) {
             $mid = ($floor + $ceiling) / 2;
             if ($bs[$i] == 1)
                 $floor = $mid;
