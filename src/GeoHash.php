@@ -4,6 +4,8 @@
 namespace MuCTS\GeoHash;
 
 
+use MuCTS\GeoHash\Exceptions\InvalidArgumentException;
+
 class GeoHash
 {
     public const MIN_LAT = -90;
@@ -43,7 +45,11 @@ class GeoHash
     {
         $binary = '';
         for ($i = 0; $i < strlen($geoHash); $i++) {
-            $binary .= str_pad(decbin(array_search($geoHash[$i], $this->digits)), 5, '0', STR_PAD_LEFT);
+            $digit = array_search($geoHash[$i], $this->digits);
+            if (!is_int($digit)) {
+                throw new InvalidArgumentException('%s is not a valid geo hash format text.');
+            }
+            $binary .= str_pad(decbin($digit), 5, '0', STR_PAD_LEFT);
         }
         $lonSet = [];
         $latSet = [];
